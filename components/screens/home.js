@@ -6,41 +6,64 @@ import axios from 'axios';
 import { yellow, light, mauve, darkPurple, blueberry } from '../styles/variables';
 import baseStyle from '../styles/base';
 import Icon from '../UI/icon';
+import * as Notifications from 'expo-notifications';
+import { getLocalTime, getItemStorage } from '../../helpers';
 
 const Home = ({ navigation, route }) => {
-	const [ loaded, setLoaded ] = useState(false);
 	const [ sunrise, setSunrise ] = useState(null);
+	const [ now, setNow ] = useState(moment().format('DD.MM.YYYY   HH:mm'));
 	const { location } = route.params;
+
+	useEffect(() => {
+        const minute = 60000
+		const interval = setInterval(() => {
+			alarmNotification();
+			setNow(moment().format('DD.MM.YYYY   HH:mm'));
+		}, minute);
+		return () => clearInterval(interval);
+	}, []);
+
+	const testTime = moment().set({ hour: 19, minute: 12, second: 0 });
+
+	const alarmNotification = async () => {
+        const chosenTime = await getItemStorage('chosenTime')
+        
+		const timeToWakeUp = moment().format('DD-MM-YYYY HH:mm') === moment(sunrise).format('DD-MM-YYYY HH:mm');
+        
+		if (timeToWakeUp) {
+			await Notifications.scheduleNotificationAsync({
+				content: {
+					title: chosenTitle || 'Time to get up',
+					body: 'The sun rises in ' + location.address.city + '.',
+					sound: 'alarm1.wav' // only Bare Workflow
+				},
+                trigger: null
+			});
+		}
+	};
 
 	const getSunriseTime = async (location) => {
 		const lat = location.coords.latitude;
 		const lng = location.coords.longitude;
 
 		try {
-			// &date=2021-08-25
-			const tomorrow = moment().add(1, 'd').format('YYYY-MM-DD');
+			let { data: dataToday } = await axios.get(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}`);
 
-			// NOTE: All times are in UTC and summer time adjustments are not included in the returned data.
-			let { data } = await axios.get(
-				`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&date=${tomorrow}`
-			);
-			const sunriseUTC = data.results.sunrise;
-			const hours = sunriseUTC.split(':')[0];
-			const minutes = sunriseUTC.split(':')[1];
+			const sunriseToday = getLocalTime(dataToday.results.sunrise, moment());
 
-			const sunriseDate = moment.utc(tomorrow).set({ hour: hours, minute: minutes });
+			// if is after sunrise today, then get tomorrow
+			if (moment().isAfter(sunriseToday)) {
+				const tomorrow = moment().add(1, 'd').format('YYYY-MM-DD');
+				let { data: dataTomorrow } = await axios.get(
+					`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&date=${tomorrow}`
+				);
 
-			let localTime = moment.utc(sunriseDate).toDate();
-			localTime = moment(localTime).format('YYYY-MM-DD HH:mm');
-
-			setSunrise(localTime);
-
-			setLoaded(true);
-			if (data.status !== 'OK') {
-				console.log('error', data.status);
+				const sunriseTomorrow = getLocalTime(dataTomorrow.results.sunrise, tomorrow);
+				setSunrise(sunriseTomorrow);
+			} else {
+				setSunrise(sunriseToday);
 			}
 		} catch (error) {
-			setLoaded(true);
 			console.log('error', error);
 		}
 	};
@@ -52,10 +75,12 @@ const Home = ({ navigation, route }) => {
 	return (
 		<View style={styles.container}>
 			<Text style={[ baseStyle.textSmallBold ]}>{location.address.city}</Text>
-			<Text style={[ baseStyle.textSmall ]}>{moment().format('DD.MM.YYYY   HH:mm')}</Text>
+			<Text style={[ baseStyle.textSmall ]}>{now}</Text>
 
-			<Text style={[ baseStyle.textMedium, baseStyle.textBold, { marginTop: 30 } ]}>Sunrise tomorrow:</Text>
-			<Text style={[ baseStyle.textLarge, sunrise ? {} : {opacity: 0} ]}>{sunrise ? moment(sunrise).format('HH:mm') : '0'}</Text>
+			<Text style={[ baseStyle.textMedium, baseStyle.textBold, { marginTop: 30 } ]}>Sunrise {moment(sunrise).format('YY-MM-DD') === moment().format('YY-MM-DD') ? 'today' : 'tomorrow'}:</Text>
+			<Text style={[ baseStyle.textLarge, sunrise ? {} : { opacity: 0 } ]}>
+				{sunrise ? moment(sunrise).format('HH:mm') : '0'}
+			</Text>
 
 			<TouchableOpacity
 				style={[ styles.sideButton, { backgroundColor: yellow, bottom: 150 } ]}
