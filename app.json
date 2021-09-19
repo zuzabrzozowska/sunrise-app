@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "sunrise-app",
+    "name": "sunrise app",
     "slug": "sunrise-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -27,6 +27,17 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffffff",
+          "sounds": ["./assets/alarm1.wav"],
+          "mode": "production"
+        }
+      ]
+    ]
   }
 }
