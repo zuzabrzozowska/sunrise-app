@@ -8,9 +8,10 @@ const Stack = createNativeStackNavigator();
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import * as Font from 'expo-font';
-//import { getData } from './utils/async-storage';
+import { storeObjectDataStorage, viewStorage } from './helpers';
 import { Text, View, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
-import { yellow, light } from './components/styles/variables'
+import { yellow, light, blueberry } from './components/styles/variables'
+import baseStyle from './components/styles/base';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -24,6 +25,8 @@ const App = () => {
 	const [ location, setLocation ] = useState(null);
 	const [ errorMsg, setErrorMsg ] = useState(null);
   const [fontLoaded, setFontLoaded] = useState(false);
+
+  viewStorage()
 
   useEffect(() => {
     let isCancelled = false;
@@ -50,6 +53,7 @@ const App = () => {
         ...location,
         address: locationArray[0],
       }
+      storeObjectDataStorage('location', location)
 			setLocation(location);
 		})();
 	}, []);
@@ -81,8 +85,8 @@ const App = () => {
 			<Stack.Navigator>
         <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} initialParams={{ location }} />
 
-        <Stack.Screen name="Calendar" component={Calendar} initialParams={{ location }} />
-        <Stack.Screen name="Settings" component={Settings} initialParams={{ location }} />
+        {/* <Stack.Screen name="Calendar" component={Calendar} /> */}
+        <Stack.Screen name="Settings" component={Settings} initialParams={{ location }} options={{ headerShown: false }} />
       </Stack.Navigator>
 		</NavigationContainer>
 	);

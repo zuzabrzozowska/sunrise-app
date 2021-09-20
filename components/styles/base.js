@@ -19,6 +19,17 @@ const baseStyle = StyleSheet.create({
     shadowOpacity: 0.2,
     elevation: 4,
   },
+  card: {
+    shadowColor: "grey",
+    shadowOffset: { width: 1, height: 3 },
+    shadowOpacity: 0.2,
+    elevation: 4,
+    backgroundColor: "white",
+    padding: 25,
+    margin: 10,
+    borderRadius: 5,
+  },
+  button: { backgroundColor: yellow, borderRadius: 40, padding: 15, width: screenWidth / 2 },
   textLarge: {
     fontSize: 25,
     marginTop: 5,

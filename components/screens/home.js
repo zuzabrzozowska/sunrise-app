@@ -1,43 +1,55 @@
 import { StatusBar } from 'expo-status-bar';
 import moment from 'moment';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
 import axios from 'axios';
-import { yellow, light, mauve, darkPurple, blueberry } from '../styles/variables';
+import {
+	yellow,
+	light,
+	mauve,
+	darkPurple,
+	blueberry,
+	lightPurple,
+	screenHeight,
+	screenWidth
+} from '../styles/variables';
 import baseStyle from '../styles/base';
 import Icon from '../UI/icon';
 import * as Notifications from 'expo-notifications';
-import { getLocalTime, getItemStorage } from '../../helpers';
+import { getLocalTime, getItemStorage, storeObjectDataStorage } from '../../helpers';
+import BG from '../../assets/bg.png';
 
 const Home = ({ navigation, route }) => {
 	const [ sunrise, setSunrise ] = useState(null);
-	const [ now, setNow ] = useState(moment().format('DD.MM.YYYY   HH:mm'));
 	const { location } = route.params;
 
 	useEffect(() => {
-        const minute = 60000
+		const minute = 60000;
 		const interval = setInterval(() => {
 			alarmNotification();
-			setNow(moment().format('DD.MM.YYYY   HH:mm'));
 		}, minute);
 		return () => clearInterval(interval);
 	}, []);
 
-	const testTime = moment().set({ hour: 19, minute: 12, second: 0 });
+	const testTime = moment().set({ hour: 22, minute: 55, second: 0 });
 
 	const alarmNotification = async () => {
-        const chosenTime = await getItemStorage('chosenTime')
-        
+		const chosenTime = await getItemStorage('chosenTime');
+        const chosenSound = await getItemStorage('chosenSound');
+		const label = await getItemStorage('label');
+
+        console.log('chosenTime', chosenTime)
+
 		const timeToWakeUp = moment().format('DD-MM-YYYY HH:mm') === moment(sunrise).format('DD-MM-YYYY HH:mm');
-        
+
 		if (timeToWakeUp) {
 			await Notifications.scheduleNotificationAsync({
 				content: {
-					title: chosenTitle || 'Time to get up',
+					title: label || 'Sunrise alert',
 					body: 'The sun rises in ' + location.address.city + '.',
-					sound: 'alarm1.wav' // only Bare Workflow
+                    sound: chosenSound || 'alert1.wav'
 				},
-                trigger: null
+				trigger: null
 			});
 		}
 	};
@@ -74,33 +86,39 @@ const Home = ({ navigation, route }) => {
 
 	return (
 		<View style={styles.container}>
-			<Text style={[ baseStyle.textSmallBold ]}>{location.address.city}</Text>
-			<Text style={[ baseStyle.textSmall ]}>{now}</Text>
+			<Image source={BG} style={styles.background} />
 
-			<Text style={[ baseStyle.textMedium, baseStyle.textBold, { marginTop: 30 } ]}>Sunrise {moment(sunrise).format('YY-MM-DD') === moment().format('YY-MM-DD') ? 'today' : 'tomorrow'}:</Text>
-			<Text style={[ baseStyle.textLarge, sunrise ? {} : { opacity: 0 } ]}>
+			<View style={{ borderRadius: 100, padding: 10, backgroundColor: light, marginTop: 150 }}>
+				<Image
+					source={{ uri: 'https://freepngimg.com/thumb/sun/23533-7-sun-transparent-image-thumb.png' }}
+					style={styles.sun}
+				/>
+			</View>
+
+			<Text style={[ baseStyle.textSmallBold ]}>{location.address.city}</Text>
+
+			<Text style={[ baseStyle.textLarge, { marginTop: 10 } ]}>
+				Sunrise {moment(sunrise).format('YY-MM-DD') === moment().format('YY-MM-DD') ? 'today' : 'tomorrow'}:
+			</Text>
+			<Text style={[ baseStyle.textLarge, baseStyle.textBold, sunrise ? {} : { opacity: 0 } ]}>
 				{sunrise ? moment(sunrise).format('HH:mm') : '0'}
 			</Text>
 
 			<TouchableOpacity
-				style={[ styles.sideButton, { backgroundColor: yellow, bottom: 150 } ]}
 				onPress={() => navigation.navigate('Settings')}
+				style={[ baseStyle.button, { marginTop: 20 } ]}
 			>
-				<Icon size={30} name="sliders-h" color={darkPurple} />
+				<Text style={[ baseStyle.textSmall, { textAlign: 'center' } ]}>Start here</Text>
 			</TouchableOpacity>
 
-			<TouchableOpacity
-				style={[ styles.sideButton, { backgroundColor: blueberry, bottom: 50 } ]}
+			{/* <TouchableOpacity
+				style={[ styles.sideButton, { backgroundColor: lightPurple, bottom: 30 } ]}
 				onPress={() => navigation.navigate('Calendar')}
 			>
-				<Icon size={30} name="calendar-alt" color={darkPurple} />
-			</TouchableOpacity>
+				<Icon size={30} name="calendar-alt" color={mauve} />
+			</TouchableOpacity> */}
 
-			<Text
-				style={[ baseStyle.textMini, { color: mauve, fontSize: 11, position: 'absolute', bottom: 0, left: 3 } ]}
-			>
-				API: sunrise-sunset.org
-			</Text>
+			<Text style={[ baseStyle.textMini, styles.footer ]}>API: sunrise-sunset.org</Text>
 
 			<StatusBar style="auto" />
 		</View>
@@ -111,10 +129,24 @@ export default Home;
 
 const styles = StyleSheet.create({
 	container: {
-		flex: 1,
 		backgroundColor: light,
 		alignItems: 'center',
-		justifyContent: 'center'
+		justifyContent: 'center',
+		height: screenHeight
 	},
-	sideButton: { position: 'absolute', right: 0, padding: 20, borderTopLeftRadius: 10, borderBottomLeftRadius: 10 }
+	sideButton: { position: 'absolute', right: 0, padding: 20, borderTopLeftRadius: 10, borderBottomLeftRadius: 10 },
+	sun: {
+		height: 80,
+		width: 80,
+		opacity: 0.45,
+		resizeMode: 'contain'
+	},
+	background: {
+		position: 'absolute',
+		top: 0,
+		height: screenHeight / 2.1,
+		width: screenWidth,
+		resizeMode: 'cover'
+	},
+	footer: { color: lightPurple, fontSize: 11, position: 'absolute', bottom: 0, left: 3 }
 });
